@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Загрузка файлов</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f0f;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 520px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: #fff;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            color: #999;
+            margin-bottom: 6px;
+        }
+
+        textarea {
+            width: 100%;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #e0e0e0;
+            padding: 12px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 80px;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #4a9eff;
+        }
+
+        .drop-zone {
+            border: 2px dashed #333;
+            border-radius: 12px;
+            padding: 32px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #1a1a1a;
+        }
+
+        .drop-zone:hover, .drop-zone.drag-over {
+            border-color: #4a9eff;
+            background: #1a1a2a;
+        }
+
+        .drop-zone-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .drop-zone-text {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .drop-zone-text span {
+            color: #4a9eff;
+            text-decoration: underline;
+        }
+
+        .file-list {
+            margin-top: 12px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+        }
+
+        .file-item-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-right: 8px;
+        }
+
+        .file-item-size {
+            color: #666;
+            font-size: 0.8rem;
+            margin-right: 8px;
+            white-space: nowrap;
+        }
+
+        .file-item-remove {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 0 4px;
+            line-height: 1;
+        }
+
+        .file-item-remove:hover {
+            color: #ff4444;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+
+        .btn-primary {
+            background: #4a9eff;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #3a8eef;
+        }
+
+        .btn-primary:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .progress {
+            display: none;
+            margin-top: 16px;
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: #222;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #4a9eff;
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 6px;
+            text-align: center;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            padding: 14px 24px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast-success {
+            background: #1a3a1a;
+            color: #4ade80;
+            border: 1px solid #2a5a2a;
+        }
+
+        .toast-error {
+            background: #3a1a1a;
+            color: #ff6b6b;
+            border: 1px solid #5a2a2a;
+        }
+
+        .file-input-hidden {
+            display: none;
+        }
+
+        @media (max-width: 400px) {
+            h1 { font-size: 1.25rem; }
+            .drop-zone { padding: 24px 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Загрузка файлов</h1>
+
+        <div class="form-group">
+            <label for="message">Сообщение</label>
+            <textarea id="message" placeholder="Комментарий к файлам (необязательно)..." maxlength="2000"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Файлы</label>
+            <div class="drop-zone" id="dropZone">
+                <div class="drop-zone-icon">📁</div>
+                <div class="drop-zone-text">
+                    Перетащите файлы сюда или <span>выберите</span>
+                </div>
+            </div>
+            <input type="file" id="fileInput" class="file-input-hidden" multiple>
+            <div class="file-list" id="fileList"></div>
+        </div>
+
+        <button class="btn btn-primary" id="submitBtn" disabled>Отправить</button>
+
+        <div class="progress" id="progress">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">Загрузка...</div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API_URL = 'http://78.159.131.153:8089/upload';
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const submitBtn = document.getElementById('submitBtn');
+        const messageInput = document.getElementById('message');
+        const progress = document.getElementById('progress');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const toast = document.getElementById('toast');
+
+        let selectedFiles = [];
+
+        // Drop zone events
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            addFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', () => {
+            addFiles(fileInput.files);
+            fileInput.value = '';
+        });
+
+        function addFiles(fileListObj) {
+            for (const file of fileListObj) {
+                if (selectedFiles.length >= 20) {
+                    showToast('Максимум 20 файлов', 'error');
+                    break;
+                }
+                if (file.size > 50 * 1024 * 1024) {
+                    showToast(`${file.name} слишком большой (макс. 50 MB)`, 'error');
+                    continue;
+                }
+                selectedFiles.push(file);
+            }
+            renderFiles();
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            renderFiles();
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+        }
+
+        function renderFiles() {
+            fileList.innerHTML = selectedFiles.map((f, i) => `
+                <div class="file-item">
+                    <div class="file-item-name">${f.name}</div>
+                    <div class="file-item-size">${formatSize(f.size)}</div>
+                    <button class="file-item-remove" onclick="removeFile(${i})">&times;</button>
+                </div>
+            `).join('');
+            submitBtn.disabled = selectedFiles.length === 0;
+        }
+
+        function showToast(msg, type) {
+            toast.textContent = msg;
+            toast.className = `toast toast-${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 4000);
+        }
+
+        submitBtn.addEventListener('click', async () => {
+            if (selectedFiles.length === 0) return;
+
+            submitBtn.disabled = true;
+            progress.style.display = 'block';
+            progressFill.style.width = '0%';
+            progressText.textContent = 'Загрузка...';
+
+            const formData = new FormData();
+            formData.append('message', messageInput.value);
+            for (const file of selectedFiles) {
+                formData.append('files', file, file.name);
+            }
+
+            try {
+                const xhr = new XMLHttpRequest();
+
+                const result = await new Promise((resolve, reject) => {
+                    xhr.upload.addEventListener('progress', (e) => {
+                        if (e.lengthComputable) {
+                            const pct = Math.round(e.loaded / e.total * 100);
+                            progressFill.style.width = pct + '%';
+                            progressText.textContent = `Загрузка... ${pct}%`;
+                        }
+                    });
+
+                    xhr.addEventListener('load', () => {
+                        try {
+                            resolve(JSON.parse(xhr.responseText));
+                        } catch {
+                            reject(new Error('Ошибка сервера'));
+                        }
+                    });
+
+                    xhr.addEventListener('error', () => reject(new Error('Ошибка сети')));
+                    xhr.addEventListener('timeout', () => reject(new Error('Таймаут')));
+
+                    xhr.open('POST', API_URL);
+                    xhr.timeout = 300000; // 5 min
+                    xhr.send(formData);
+                });
+
+                if (result.ok) {
+                    progressText.textContent = 'Загружено на Яндекс.Диск';
+                    progressFill.style.width = '100%';
+                    showToast('Файлы успешно загружены!', 'success');
+                    selectedFiles = [];
+                    renderFiles();
+                    messageInput.value = '';
+                } else {
+                    showToast(result.error || 'Ошибка загрузки', 'error');
+                }
+            } catch (e) {
+                showToast(e.message || 'Ошибка загрузки', 'error');
+            } finally {
+                submitBtn.disabled = selectedFiles.length === 0;
+                setTimeout(() => { progress.style.display = 'none'; }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>
